@@ -41,6 +41,6 @@ class PhysicsHelper {
   /// Calculate simple bounce reflection
   static Vector2d reflectVelocity(Vector2d velocity, double normalX, double normalY) {
     final dotProduct = velocity.x * normalX + velocity.y * normalY;
-    return velocity - (dotProduct * Vector2d(normalX, normalY));
+    return velocity - (Vector2d(normalX, normalY) * (dotProduct * 2));
   }
 }

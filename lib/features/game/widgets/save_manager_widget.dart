@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/game_state.dart';
-import '../../../services/save_manager.dart';
 
 /// SaveManagerWidget provides save/load functionality to the game screen
 class SaveManagerWidget extends StatelessWidget {
@@ -18,22 +17,20 @@ class SaveManagerWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildSaveSection(),
+          _buildSaveSection(context),
           const SizedBox(height: 12),
-          _buildLoadSection(),
+          _buildLoadSection(context),
           const SizedBox(height: 12),
-          _buildResetSection(),
+          _buildResetSection(context),
         ],
       ),
     );
   }
   
   /// Save button section
-  Widget _buildSaveSection() {
-    final saveManager = gameState.saveManager;
-    
+  Widget _buildSaveSection(BuildContext context) {
     return ElevatedButton.icon(
-      onPressed: () => _handleSave(saveManager),
+      onPressed: () => _handleSave(context),
       icon: const Icon(Icons.cloud_upload_outlined),
       label: const Text('💾 Save Game'),
       style: ElevatedButton.styleFrom(
@@ -45,11 +42,9 @@ class SaveManagerWidget extends StatelessWidget {
   }
   
   /// Load button section
-  Widget _buildLoadSection() {
-    final saveManager = gameState.saveManager;
-    
+  Widget _buildLoadSection(BuildContext context) {
     return ElevatedButton.icon(
-      onPressed: () => _handleLoad(saveManager),
+      onPressed: () => _handleLoad(context),
       icon: const Icon(Icons.cloud_download_outlined),
       label: const Text('☁️ Load Game'),
       style: ElevatedButton.styleFrom(
@@ -61,9 +56,9 @@ class SaveManagerWidget extends StatelessWidget {
   }
   
   /// Reset button section
-  Widget _buildResetSection() {
+  Widget _buildResetSection(BuildContext context) {
     return OutlinedButton.icon(
-      onPressed: () => _handleReset(),
+      onPressed: () => _handleReset(context),
       icon: const Icon(Icons.delete_outline),
       label: const Text('🗑️ Clear Save'),
       style: OutlinedButton.styleFrom(
@@ -74,76 +69,79 @@ class SaveManagerWidget extends StatelessWidget {
     );
   }
   
-  void _handleSave(SaveManager saveManager) async {
+  void _handleSave(BuildContext context) async {
+    final saveManager = gameState.saveManager;
     try {
       await saveManager.saveGameState(gameState);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Game saved successfully!'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      
-      // Update local state
-      final now = DateTime.now();
-      gameState._totalSessionsSinceSave++;
-      gameState._lastSaveTime = now;
-      notifyListeners();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Game saved successfully!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Failed to save: $e'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Failed to save: $e'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
   
-  Future<void> _handleLoad(SaveManager saveManager) async {
+  Future<void> _handleLoad(BuildContext context) async {
+    final saveManager = gameState.saveManager;
     final savedState = await saveManager.getGameState();
     
     if (savedState != null && savedState['inCurrentSession'] == true) {
       // Load the saved progress
-      gameState._score = int.parse(savedState['score'].toString());
-      gameState._totalTaps = int.parse(savedState['totalTaps'].toString());
-      gameState._scoreMultiplier = 
-          double.parse(savedState['scoreMultiplier'].toString());
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Game loaded from save!'),
-          duration: Duration(seconds: 2),
-        ),
+      final taps = int.parse(savedState['totalTaps'].toString());
+      gameState.loadFromSave(
+        score: int.parse(savedState['score'].toString()),
+        totalTaps: taps,
+        scoreMultiplier: double.parse(savedState['scoreMultiplier'].toString()),
       );
+      _recalculateMultiplier(taps);
       
-      // Recalculate multiplier based on taps
-      _recalculateMultiplier(savedState['totalTaps'] ?? 0);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Game loaded from save!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } else if (savedState == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No save found. Start a new game!'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No save found. Start a new game!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } else {
       // Save is from previous session - show prompt
-      await _showLoadSessionPrompt(savedState);
+      if (context.mounted) {
+        await _showLoadSessionPrompt(context, savedState);
+      }
     }
   }
   
   void _recalculateMultiplier(int taps) {
-    final multiplier = AppConstants.scoreMultiplierBase + 
-      (taps ~/ 100).clamp(0, AppConstants.maxScoreMultiplier - AppConstants.scoreMultiplierBase) * 0.1;
-    gameState._scoreMultiplier = min(multiplier, AppConstants.maxScoreMultiplier);
-    notifyListeners();
+    gameState.recalculateMultiplier();
   }
   
-  Future<void> _showLoadSessionPrompt(Map<String, dynamic> savedState) async {
+  Future<void> _showLoadSessionPrompt(BuildContext context, Map<String, dynamic> savedState) async {
     final saveTime = DateTime.fromMillisecondsSinceEpoch(
       int.parse(savedState['timestamp'].toString())
     );
     
-    return showDialog<bool>(
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Load Previous Session?'),
@@ -163,24 +161,26 @@ class SaveManagerWidget extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // Load the old session
-              gameState._score = int.parse(savedState['score'].toString());
-              gameState._totalTaps = int.parse(savedState['totalTaps'].toString());
-              gameState._scoreMultiplier = 
-                  double.parse(savedState['scoreMultiplier'].toString());
-              _recalculateMultiplier(savedState['totalTaps'] ?? 0);
-              
-              Navigator.pop(context, true);
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Load Anyway'),
           ),
         ],
       ),
     );
+    
+    if (confirmed == true) {
+      // Load the old session
+      final taps = int.parse(savedState['totalTaps'].toString());
+      gameState.loadFromSave(
+        score: int.parse(savedState['score'].toString()),
+        totalTaps: taps,
+        scoreMultiplier: double.parse(savedState['scoreMultiplier'].toString()),
+      );
+      _recalculateMultiplier(taps);
+    }
   }
   
-  void _handleReset() async {
+  Future<void> _handleReset(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -207,12 +207,14 @@ class SaveManagerWidget extends StatelessWidget {
       // Reset game state
       gameState.resetGame();
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🗑️ Game has been reset'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🗑️ Game has been reset'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 }

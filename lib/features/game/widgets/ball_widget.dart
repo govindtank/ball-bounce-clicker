@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/vector2d.dart';
 
 class BallWidget extends StatefulWidget {
   final Offset position;
@@ -92,15 +93,3 @@ class _BallWidgetState extends State<BallWidget> with SingleTickerProviderStateM
   }
 }
 
-// Vector2d class for physics calculations
-class Vector2d {
-  final double x;
-  final double y;
-  
-  const Vector2d(this.x, this.y);
-  
-  Vector2d operator-(Vector2d other) => Vector2d(x - other.x, y - other.y);
-  
-  @override
-  String toString() => 'Vector2d($x, $y)';
-}

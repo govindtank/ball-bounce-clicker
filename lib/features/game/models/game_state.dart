@@ -65,6 +65,26 @@ class GameState extends ChangeNotifier {
     _balls.clear();
     notifyListeners();
   }
+  
+  /// Load saved game state (used by SaveManagerWidget)
+  void loadFromSave({
+    required int score,
+    required int totalTaps,
+    required double scoreMultiplier,
+  }) {
+    _score = score;
+    _totalTaps = totalTaps;
+    _scoreMultiplier = scoreMultiplier;
+    notifyListeners();
+  }
+  
+  /// Recalculate multiplier based on total taps
+  void recalculateMultiplier() {
+    final newMultiplier = AppConstants.scoreMultiplierBase + 
+      (_totalTaps ~/ 100 * 0.1).clamp(0, (AppConstants.maxScoreMultiplier - AppConstants.scoreMultiplierBase).toInt()).toDouble();
+    _scoreMultiplier = newMultiplier.clamp(AppConstants.scoreMultiplierBase, AppConstants.maxScoreMultiplier);
+    notifyListeners();
+  }
 }
 
 class BallState {
@@ -83,12 +103,14 @@ class BallState {
 
 // Utility class for random numbers - inline here to avoid import issues
 class Utils {
-  static double randomNumber() => DateTime.now().millisecondsSinceEpoch % 100;
+  static final Random _random = Random();
+  
+  static double randomNumber() => _random.nextDouble() * 100;
   
   static Vector2d randomVelocity({double min = AppConstants.ballSpeedMin}) {
     return Vector2d(
-      (randomNumber() - 50) * 0.01 * min,
-      (randomNumber() - 50) * 0.01 * min
+      (_random.nextDouble() - 0.5) * min,
+      (_random.nextDouble() - 0.5) * min
     );
   }
 }
