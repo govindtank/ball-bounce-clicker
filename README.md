@@ -15,6 +15,20 @@ A fun and addictive Flutter idle clicker game with stunning neon aesthetics. Tap
 - **📊 Progress Tracking**: See your total taps and current multiplier in real-time
 - **💾 Auto-Save**: Your progress is automatically saved
 
+### Power-Ups
+- **🌟 Extra Points**: Double your tap score temporarily
+- **⚡ Speed Boost**: Make the ball bounce faster
+- **🎁 Instant Score**: Get instant points without tapping
+- **❌ Reset**: Skip ahead by resetting your progress
+- **⏸️ Slow Motion**: Freeze time for precision tapping
+
+### Achievements
+Unlock achievements as you progress:
+- Reach milestone levels (10, 25, 50+)
+- Accumulate tap milestones (100K, 1M taps)
+- Collect all power-up types
+- Maintain perfect tap streaks
+
 ### Visual Effects
 - **✨ Neon Particle Effects**: Beautiful burst animations on every tap
 - **🌈 Gradient Score Display**: Animated score counter with color gradients
