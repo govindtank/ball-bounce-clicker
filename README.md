@@ -29,6 +29,7 @@ Unlock achievements as you progress:
 - Collect all power-up types
 - Maintain perfect tap streaks
 
+
 ### Visual Effects
 - **✨ Neon Particle Effects**: Beautiful burst animations on every tap
 - **🌈 Gradient Score Display**: Animated score counter with color gradients
