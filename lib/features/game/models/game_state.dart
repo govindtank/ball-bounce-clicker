@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/vector2d.dart';
 import '../../../services/save_manager.dart';
+import '../../../services/achievement_tracker.dart';
 import 'dart:math';
 
 class GameState extends ChangeNotifier {
@@ -16,13 +17,48 @@ class GameState extends ChangeNotifier {
   
   final Map<int, BallState> _balls = {};
   Map<int, BallState> get balls => _balls;
-
+  
   // Track last tap time for animation
   int _lastTapTimestamp = 0;
   int get lastTapTimestamp => _lastTapTimestamp;
   
   // Persistence support
   SaveManager get saveManager => SaveManager();
+  
+  // Achievement integration
+  void checkAchievementOnTap() {
+    if (_totalTaps >= 1000 && !_isUnlocked('first_1k_taps')) {
+      AchievementTracker.unlock('first_1k_taps', () {
+        notifyListeners();
+      });
+    }
+    
+    if (_totalTaps >= 10000) {
+      AchievementTracker.unlock('first_10k_taps', () {
+        notifyListeners();
+      });
+    }
+  }
+  
+  void checkAchievementOnMultiplierChange() {
+    final int multiplierInt = _scoreMultiplier.round();
+    
+    if (multiplierInt >= 2 && !_isUnlocked('multiplier_2x')) {
+      AchievementTracker.unlock('multiplier_2x', () {
+        notifyListeners();
+      });
+    }
+    
+    if (_scoreMultiplier >= 5.0) {
+      AchievementTracker.unlock('multiplier_5x', () {
+        notifyListeners();
+      });
+    }
+  }
+  
+  bool _isUnlocked(String id) {
+    return AchievementTracker.isUnlocked(id);
+  }
   
   void incrementScore() {
     _score += AppConstants.pointsPerTap * (_scoreMultiplier.round());
@@ -34,6 +70,12 @@ class GameState extends ChangeNotifier {
       _scoreMultiplier = 
           AppConstants.scoreMultiplierBase + 
           (min((_scoreMultiplier + 0.1), AppConstants.maxScoreMultiplier));
+    }
+    
+    // Check for achievements on progress
+    checkAchievementOnTap();
+    if (_totalTaps % 100 == 0) {
+      checkAchievementOnMultiplierChange();
     }
     
     notifyListeners();

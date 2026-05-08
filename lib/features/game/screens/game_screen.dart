@@ -5,6 +5,8 @@ import '../widgets/ball_widget.dart';
 import '../widgets/score_display.dart';
 import '../widgets/particle_effect.dart';
 import '../models/game_state.dart';
+import '../widgets/save_manager_widget.dart';
+import '../widgets/achievements_widget.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -237,23 +239,81 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTopBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppConstants.backgroundDarker.withOpacity(0.8),
-            Colors.transparent,
-          ],
-        ),
-      ),
-      child: SafeArea(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Title
+    return Consumer<GameState>(
+      builder: (context, gameState, child) {
+        final unlockedCount = gameState.totalTaps >= 1000 ? 1 : 0;
+        if (gameState.scoreMultiplier >= 2.0) unlockedCount++;
+        if (gameState.scoreMultiplier >= 5.0) unlockedCount++;
+        
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppConstants.backgroundDarker.withOpacity(0.8),
+                Colors.transparent,
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Title with achievement badge
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [AppConstants.glowPurple, AppConstants.accentColor],
+                      ).createShader(bounds),
+                      child: Text(
+                        'BALL BOUNCE',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ),
+                    if (unlockedCount > 0) Positioned(
+                      right: -8,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppConstants.glowPink.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppConstants.glowPink.withOpacity(0.5),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(
+                            unlockedCount,
+                            (i) => Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Menu button with achievements
             ShaderMask(
               shaderCallback: (bounds) => const LinearGradient(
                 colors: [AppConstants.glowPurple, AppConstants.accentColor],
@@ -280,13 +340,25 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 borderRadius: BorderRadius.circular(12),
               ),
               onSelected: (value) {
-                if (value == 'reset') {
+                if (value == 'achievements') {
+                  _showAchievementsDialog();
+                } else if (value == 'reset') {
                   _showResetDialog(context);
                 } else if (value == 'about') {
                   _showAboutDialog(context);
                 }
               },
               itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'achievements',
+                  child: Row(
+                    children: [
+                      Icon(Icons.medal, color: AppConstants.primaryColor),
+                      SizedBox(width: 8),
+                      Text('Achievements (${_getUnlockedCount()})', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
                 const PopupMenuItem(
                   value: 'about',
                   child: Row(
@@ -541,15 +613,97 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  String _formatNumber(int number) {
-    if (number >= 1000000000) {
-      return '${(number / 1000000000).toStringAsFixed(1)}B';
-    } else if (number >= 1000000) {
-      return '${(number / 1000000).toStringAsFixed(1)}M';
-    } else if (number >= 1000) {
-      return '${(number / 1000).toStringAsFixed(1)}K';
-    }
-    return number.toString();
+  int _getUnlockedCount() {
+    final state = context.read<GameState>();
+    int count = 0;
+    if (state.totalTaps >= 1000) count++;
+    if (state.scoreMultiplier >= 2.0) count++;
+    if (state.scoreMultiplier >= 5.0) count++;
+    return count;
+  }
+
+  void _showAchievementsDialog() {
+    final state = context.read<GameState>();
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(        backgroundColor: AppConstants.surfaceColor,        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),        child: Container(          padding: const EdgeInsets.all(20),          decoration: BoxDecoration(            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF2A2A4E), Color(0xFF1A1A2E)],
+            ),            borderRadius: BorderRadius.circular(16),          ),          child: Column(            mainAxisSize: MainAxisSize.min,            children: [
+              Row(
+                children: [
+                  Icon(Icons.medal, color: AppConstants.primaryColor, size: 32),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'ACHIEVEMENTS',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildAchievementRow('Century Club', 'Reach 1,000 taps', state.totalTaps >= 1000),
+              _buildAchievementRow('Millionaire', 'Reach 10,000 taps (Complete!)', state.totalTaps >= 10000),
+              _buildAchievementRow('Fast Multiplier', 'Unlock 2x multiplier', state.scoreMultiplier >= 2.0),
+              _buildAchievementRow('Legend Status', 'Max out to 5x multiplier', state.scoreMultiplier >= 5.0),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAchievementRow(String title, String desc, bool unlocked) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: unlocked ? AppConstants.primaryColor.withOpacity(0.3) : Colors.black26,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: unlocked ? AppConstants.primaryColor.withOpacity(0.5) : Colors.grey.shade700),
+      ),
+      child: Row(
+        children: [
+          Icon(unlocked ? Icons.check_circle : Icons.lock, color: unlocked ? Colors.green : Colors.grey, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: unlocked ? Colors.white : Colors.grey,
+                  ),
+                ),
+                Text(
+                  desc,
+                  style: TextStyle(fontSize: 10, color: unlocked ? Colors.green.shade400 : Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
