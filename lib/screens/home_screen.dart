@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen>
       body: Stack(
         children: [
           // Animated background particles
-          _buildAnimatedBackground(size),
+          _buildAnimatedBackground(size, _animController),
 
           // Main content
           Center(
@@ -480,14 +480,14 @@ class _AnimatedBackgroundPainter extends CustomPainter {
   bool shouldRepaint(covariant _AnimatedBackgroundPainter old) => true;
 }
 
-Widget _buildAnimatedBackground(Size size) {
+Widget _buildAnimatedBackground(Size size, AnimationController animController) {
   return Positioned.fill(
     child: AnimatedBuilder(
-      animation: _animController,
+      animation: animController,
       builder: (context, child) {
         return CustomPaint(
           size: size,
-          painter: _AnimatedBackgroundPainter(_animController.value),
+          painter: _AnimatedBackgroundPainter(animController.value),
         );
       },
     ),
