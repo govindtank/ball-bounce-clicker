@@ -30,9 +30,17 @@ class _GameScreenState extends State<GameScreen>
   void initState() {
     super.initState();
     _ticker = createTicker(_onTick);
-    widget.gameState.resetGame();
-    widget.gameState.status = GameStatus.playing;
-    _ticker.start();
+
+    // Set arena size from available screen area
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final size = MediaQuery.of(context).size;
+        widget.gameState.setArenaSize(size);
+        widget.gameState.resetGame();
+        widget.gameState.status = GameStatus.playing;
+        _ticker.start();
+      }
+    });
   }
 
   void _onTick(Duration elapsed) {

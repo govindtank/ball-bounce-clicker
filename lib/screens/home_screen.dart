@@ -483,11 +483,11 @@ class _AnimatedBackgroundPainter extends CustomPainter {
 Widget _buildAnimatedBackground(Size size) {
   return Positioned.fill(
     child: AnimatedBuilder(
-      animation: const AlwaysStoppedAnimation(0),
+      animation: _animController,
       builder: (context, child) {
         return CustomPaint(
           size: size,
-          painter: _AnimatedBackgroundPainter(0),
+          painter: _AnimatedBackgroundPainter(_animController.value),
         );
       },
     ),

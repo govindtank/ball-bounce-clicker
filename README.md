@@ -82,9 +82,8 @@ lib/
 │   ├── bounce_zone.dart           # Core engine: physics, state, waves, hazards
 │   └── game_painter.dart          # CustomPainter rendering + particles + HUD
 ├── screens/
-│   ├── home_screen.dart           # Main menu with high score
-│   ├── game_screen.dart           # Game canvas, controls, overlays
-│   └── how_to_play_screen.dart    # Tutorial overlay
+│   ├── home_screen.dart           # Main menu with high score + how-to-play
+│   └── game_screen.dart           # Game canvas, controls, overlays
 └── services/
     └── storage_service.dart       # High score / best wave persistence
 ```
